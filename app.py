@@ -15,7 +15,7 @@ from timezonefinder import TimezoneFinder
 # 0. تهيئة الصفحة ومسار ملفات الـ Ephemeris
 # ==========================================
 st.set_page_config(
-    page_title="نظام التنجيم الساعي",
+    page_title="النظام المتقدم للتنجيم الساعي",
     layout="wide",
 )
 
@@ -25,8 +25,8 @@ if not os.path.exists(EPHE_PATH):
 
 swe.set_ephe_path(EPHE_PATH)
 
-st.title(" 🔮 نظام التنجيم الساعي المتقدم (شامل الكويكيبات)")
-st.markdown("مبني وفقاً للقواعد الكلاسيكية الدقيقة (خوان استاديا / أوليفيا باركلي) - برمجة الفلكي استرو رادار.")
+st.title("🔮 نظام التنجيم الساعي الغربي شامل الكويكبات (تطوير استرو رادار)")
+st.markdown("مبني وفقاً للقواعد الكلاسيكية الدقيقة وأحدث أبحاث الكويكبات و توقع الوقت.")
 st.markdown("---")
 
 # ==========================================
@@ -70,12 +70,19 @@ def get_utc_julian_day(date_obj: date, time_obj: time, tz_str: str) -> float:
     )
 
 # ==========================================
-# القواميس الفلكية التقليدية وأسئلة البيوت
+# القواميس الفلكية الشاملة (الكواكب والبيوت والكويكبات)
 # ==========================================
 SIGN_NAMES = [
     "الحمل", "الثور", "الجوزاء", "السرطان", "الأسد", "العذراء",
     "الميزان", "العقرب", "القوس", "الجدي", "الدلو", "الحوت"
 ]
+
+SIGN_MODALITY = {
+    "الحمل": "كاردينالي", "الثور": "ثابت", "الجوزاء": "متحرك",
+    "السرطان": "كاردينالي", "الأسد": "ثابت", "العذراء": "متحرك",
+    "الميزان": "كاردينالي", "العقرب": "ثابت", "القوس": "متحرك",
+    "الجدي": "كاردينالي", "الدلو": "ثابت", "الحوت": "متحرك"
+}
 
 RULERS = {
     "الحمل": "المريخ", "الثور": "الزهرة", "الجوزاء": "عطارد",
@@ -87,7 +94,7 @@ RULERS = {
 QUESTION_HOUSES = {
     "البيت 1: الشخص، البدايات، الصحة العامة، هل التغيير يناسبني؟": 1,
     "البيت 2: المال، الأصول، الأرباح، زيادة الراتب، أو استرداد شيء ضائع.": 2,
-    "البيت 3: الرحلات القصيرة، الإخوة، الاتصالات، السياره، العقود البسيطة.": 3,
+    "البيت 3: الرحلات القصيرة، الإخوة، الاتصالات، السيارة، العقود البسيطة.": 3,
     "البيت 4: العقار، المنزل، الشقة، الأسرة، الأب، نهاية المسألة.": 4,
     "البيت 5: الأطفال، الحمل، المضاربات، الاستثمار، النجاح في الامتحانات.": 5,
     "البيت 6: العمل اليومي، الموظفون، الأمراض الحادة، الحيوانات الأليفة، الحميات.": 6,
@@ -147,6 +154,7 @@ if st.button("🚀 تحليل الخريطة الساعية واستخراج ا�
         st.error(f"خطأ في حساب التوقيت والمنطقة الزمنية: {e}")
         st.stop()
 
+    # القاموس الشامل متضمناً الكويكبات الحديثة
     planets = {
         "الشمس": swe.SUN,
         "القمر": swe.MOON,
@@ -155,6 +163,12 @@ if st.button("🚀 تحليل الخريطة الساعية واستخراج ا�
         "المريخ": swe.MARS,
         "المشتري": swe.JUPITER,
         "زحل": swe.SATURN,
+        "الكيتو (الجنوبية)": swe.MEAN_NODE,
+        "تشيرون (Chiron)": swe.CHIRON,
+        "سيريس (Ceres)": swe.CERES,
+        "بالاس (Pallas)": swe.PALLAS,
+        "جونو (Juno)": swe.JUNO,
+        "فيستا (Vesta)": swe.VESTA,
     }
 
     planet_data = {}
@@ -172,6 +186,7 @@ if st.button("🚀 تحليل الخريطة الساعية واستخراج ا�
             "speed": speed,
         }
 
+    # حساب البيوت بنظام ريغومونتانوس (Regiomontanus)
     houses_cusps, ascmc = swe.houses_ex(jd, lat, lon, b"R")
     asc_lon = houses_cusps[0]
     asc_sign, asc_deg = get_sign_and_deg(asc_lon)
@@ -196,7 +211,7 @@ if st.button("🚀 تحليل الخريطة الساعية واستخراج ا�
     target_sign, _ = get_sign_and_deg(target_cusp_lon)
     quesited_ruler = RULERS[target_sign]
 
-    st.success("✨ تمت الحسابات الفلكية وتحويل التوقيت بنجاح عبر محرك Swiss Ephemeris!")
+    st.success("✨ تمت الحسابات الفلكية وتحويل التوقيت بنجاح عبر محرك Swiss Ephemeris بنظام ريغومونتانوس!")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -211,95 +226,173 @@ if st.button("🚀 تحليل الخريطة الساعية واستخراج ا�
         st.write(f"- **حاكم البيت المستهدف:** {quesited_ruler} (في البرج: {planet_data[quesited_ruler]['sign']}، البيت {planet_data[quesited_ruler]['house']})")
 
     st.markdown("---")
-    st.markdown("### 🛡️ تحليل الاتصالات المتقدم وفق القواعد الكلاسيكية")
+    st.markdown("### 🛡️ المرحلة الأولى: فلاتر الاستبعاد القاطعة (Gatekeepers)")
 
-    warnings = []
-    obstacles = []
+    disqualifiers = []
+    
+    # 1. فحص درجات الطالع الخطرة (Rules 14, 15)
+    if asc_deg < 3.0:
+        disqualifiers.append("درجة الطالع أقل من 3 درجات (سابق لأوانه / الموضوع لم ينضج بعد).")
+    elif asc_deg > 27.0:
+        disqualifiers.append("درجة الطالع أكثر من 27 درجة (متأخر جداً / الوضع حتمي ولا رجوع فيه).")
 
+    # 2. فحص خلو المسار للقمر (Void of Course - Rule 40)
+    # القمر يعتبر خالي السير إذا لم يصنع أي اتصال رئيسي قبل مغادرة برجه الحالي
     moon_lon = planet_data["القمر"]["lon"]
-    quesited_lon = planet_data[quesited_ruler]["lon"]
-    querent_lon = planet_data[querent_ruler]["lon"]
+    moon_sign_idx = int(moon_lon / 30)
+    moon_next_sign_boundary = (moon_sign_idx + 1) * 30
+    
+    moon_voc = True
+    for p_name, p_info in planet_data.items():
+        if p_name == "القمر":
+            continue
+        p_lon = p_info["lon"]
+        # إذا كان الكوكب يقع في نفس البرج ومتقدم على القمر أو يصنع معه اتصالاً قبلBoundary
+        diff = (p_lon - moon_lon) % 360
+        if 0 < diff <= (moon_next_sign_boundary - moon_lon):
+            moon_voc = False
+            break
 
-    # دالة تفصيلية للاتصالات الكبرى (تثليث 120، تسداس 60، اقتران 0، تربيع 90، مقابلة 180)
+    if moon_voc:
+        disqualifiers.append("القمر خالي السير (Void of Course) - دلالة تقليدية قاطعة على أن (لا شيء سيحدث) أو النتيجة مبهمة.")
+
+    # 3. فحص وجود زحل في الأوتاد الحرجة (Rules 12, 13)
+    saturn_house = planet_data["زحل"]["house"]
+    if saturn_house in [1, 7, target_house]:
+        disqualifiers.append(f"وجود زحل في بيت حرجة (البيت {saturn_house}) يفرض عقوبة ثقيلة وتأخيراً أو عرقلة مؤكدة.")
+
+    if disqualifiers:
+        st.warning("⚠️ **تم رصد موانع أو شروط استبعاد قاطعة في الخريطة:**")
+        for d in disqualifiers:
+            st.write(f"- {d}")
+        if moon_voc or asc_deg < 3.0 or asc_deg > 27.0:
+            st.error("🛑 **النتيجة القاطعة بناءً على الفلاتر الأولى:** غير واضح / الخريطة غير صالحة للبت الفوري.")
+            st.stop()
+
+    st.markdown("---")
+    st.markdown("### 📊 المرحلة الثانية والثالثة: محرك النقاط ومصفوفة القرار النهائي")
+
+    # حساب الاتصالات
     def check_aspect(lon1, lon2):
         diff = abs(lon1 - lon2) % 360
         if diff > 180:
             diff = 360 - diff
         
         if abs(diff - 120) <= 6.0:
-            return True, "تثليث (Trine)", "positive"
+            return True, "تثليث (Trine)", "positive", abs(diff - 120)
         elif abs(diff - 60) <= 6.0:
-            return True, "تسداس (Sextile)", "positive"
+            return True, "تسديس (Sextile)", "positive", abs(diff - 60)
         elif abs(diff - 0) <= 8.0:
-            return True, "اقتران (Conjunction)", "neutral"
+            return True, "اقتران (Conjunction)", "neutral", abs(diff - 0)
         elif abs(diff - 90) <= 6.0:
-            return True, "تربيع (Square)", "negative"
+            return True, "تربيع (Square)", "negative", abs(diff - 90)
         elif abs(diff - 180) <= 6.0:
-            return True, "مقابلة (Opposition)", "negative"
-        return False, None, None
+            return True, "مقابلة (Opposition)", "negative", abs(diff - 180)
+        return False, None, None, 0.0
 
-    # فحص علاقة حاكم البيت المستهدف مع القمر ومع حاكم الطالع
-    has_moon_aspect, moon_asp_name, moon_asp_type = check_aspect(quesited_lon, moon_lon)
-    has_querent_aspect, querent_asp_name, querent_asp_type = check_aspect(quesited_lon, querent_lon)
+    quesited_lon = planet_data[quesited_ruler]["lon"]
+    querent_lon = planet_data[querent_ruler]["lon"]
 
-    # التحقق من تقنية "نقل النور" (Translation of Light) كلاسيكياً:
-    # عندما ينفصل كوكب سريع عن أحدهما ليتصل بالآخر عبر وسيط، أو اتصال القمر كشاهد عام
-    translation_detected = False
-    for p_name, p_vals in planet_data.items():
-        if p_name in [querent_ruler, quesited_ruler, "القمر"]:
-            continue
-        p_lon = p_vals["lon"]
-        # هل الكوكب الوسيط يصنع اتصالاً مع الطرفين؟
-        link1, _, t1 = check_aspect(p_lon, querent_lon)
-        link2, _, t2 = check_aspect(p_lon, quesited_lon)
-        if link1 and link2 and t1 == "positive" and t2 == "positive":
-            translation_detected = True
-            obstacles.append(f"تم رصد تقنية نقل/تجمع النور عبر الوسيط ({p_name}) لتسهيل الأمر.")
+    has_moon_aspect, moon_asp_name, moon_asp_type, moon_orb = check_aspect(quesited_lon, moon_lon)
+    has_querent_aspect, querent_asp_name, querent_asp_type, querent_orb = check_aspect(quesited_lon, querent_lon)
 
-    # رصد المعوقات الكلاسيكية
+    score = 0
+    score_details = []
+
+    # 1. نقاط الاتصالات الكبرى
+    if has_moon_aspect:
+        if moon_asp_type == "positive":
+            score += 4
+            score_details.append(f"اتصال إيجابي بين القمر وحاكم المسؤول عنه ({moon_asp_name}): +4 نقاط")
+        elif moon_asp_type == "negative":
+            score -= 4
+            score_details.append(f"اتصال سلبي بين القمر وحاكم المسؤول عنه ({moon_asp_name}): -4 نقاط")
+        elif moon_asp_type == "neutral":
+            score += 2
+            score_details.append(f"اقتران بين القمر وحاكم المسؤول عنه: +2 نقاط")
+
+    if has_querent_aspect:
+        if querent_asp_type == "positive":
+            score += 4
+            score_details.append(f"اتصال إيجابي بين حاكم الطالع وحاكم المسؤول عنه ({querent_asp_name}): +4 نقاط")
+        elif querent_asp_type == "negative":
+            score -= 4
+            score_details.append(f"اتصال سلبي بين حاكم الطالع وحاكم المسؤول عنه ({querent_asp_name}): -4 نقاط")
+        elif querent_asp_type == "neutral":
+            score += 2
+            score_details.append(f"اقتران بين حاكم الطالع وحاكم المسؤول عنه: +2 نقاط")
+
+    # 2. فحص الاحتراق (Combustion) والشمس
+    sun_lon = planet_data["الشمس"]["lon"]
+    for p_name in [querent_ruler, quesited_ruler]:
+        if abs(planet_data[p_name]["lon"] - sun_lon) <= 8.5:
+            score -= 4
+            score_details.append(f"الكوكب ({p_name}) محترق بالشمس (Combustion): -4 نقاط")
+
+    # 3. التراجع والاستثناءات (Rules 28, 31)
     if planet_data[quesited_ruler]["retro"]:
-        obstacles.append(f"حاكم المسؤول عنه ({quesited_ruler}) متراجع (يدل على تأخير أو مراجعة).")
-    if planet_data["زحل"]["house"] in [1, 7, target_house]:
-        obstacles.append("وجود زحل في الأوتاد أو بيت المسألة يفرض متطلبات أو تأخيراً صبوراً.")
-
-    # ==========================================
-    # المنطق النهائي المطور (دعم القبول مع مراعاة السلبيات الحقيقية)
-    # ==========================================
-    # المسألة تقبل (نعم) إذا وُجد اتصال إيجابي (تثليث/تسداس/اقتران) أو نقل نور فعال، ولم تكن هناك موانع قطعية مدمرة.
-    is_positive = (moon_asp_type in ["positive", "neutral"] or querent_asp_type in ["positive", "neutral"] or translation_detected)
-    is_severe_negative = (moon_asp_type == "negative" or querent_asp_type == "negative") and not translation_detected
-
-    if is_severe_negative:
-        final_verdict = "لا (تعذر اتمام المسألة بسبب اتصال سلبي قاطع: تربيع أو مقابلة)"
-        detailed_explanation = (
-            f"**تحليل الرفض:**<br>"
-            f"رصد البرنامج اتصالاً سلبياً قاطعاً (تربيع أو مقابلة) دون وجود وسيط لنقل النور، مما يشير طبقاً للقواعد الكلاسيكية إلى عراقيل واضحة تمنع إتمام المسألة."
-        )
-    elif is_positive or has_moon_aspect or has_querent_aspect:
-        final_verdict = "نعم (قبول المسألة)"
-        if not obstacles:
-            detailed_explanation = (
-                f"**تحليل القبول الإيجابي:**<br>"
-                f"1. **الاتصال الداعم:** توجد روابط زاوية إيجابية أو توافق مباشر بين دلالات البيت المستهدف ({target_house}) وحاكم الطالع أو القمر.<br>"
-                f"2. **الخلاصة:** المسألة مقبولة وتتجه نحو النجاح."
-            )
+        if target_house == 2:
+            score += 3
+            score_details.append(f"تراجع حاكم البيت الثاني للسؤال عن مال/شيء ضائع (استثناء قاعدة 28): +3 نقاط")
         else:
-            detailed_explanation = (
-                f"**تحليل القبول مع وجود معوقات جانبية:**<br>"
-                f"1. **قبول المبدأ (نعم):** الاتجاه العام والمبدئي للمسألة إيجابي ويتم تحقيق الغاية.<br>"
-                f"2. **الملاحظات والمعوقات:** {', '.join(obstacles)}.<br>"
-                f"3. **الخلاصة:** الأمر يتم بنجاح ولكن مع بعض المتطلبات أو التأخير البسيط."
-            )
-    else:
-        final_verdict = "غير واضح (بحاجة لدراسة يدوية دقيقة)"
-        detailed_explanation = (
-            f"**تحليل عدم الوضوح:**<br>"
-            f"الروابط بين الدلائل غير مباشرة أو تحتاج لفحص دقيق لحالة النجوم الثابتة والاتصالات الصغرى."
-        )
+            score -= 2
+            score_details.append(f"حاكم المسؤول عنه ({quesited_ruler}) متراجع: -2 نقطة")
 
-    st.subheader(f"النتيجة الحاسمة للمخرج: **{final_verdict}**")
-    st.markdown("### الشرح الفلكي التفصيلي:")
-    st.markdown(detailed_explanation, unsafe_allow_html=True)
+    # 4. الاستقبال المتبادل (Mutual Reception)
+    querent_sign = planet_data[querent_ruler]["sign"]
+    quesited_sign = planet_data[quesited_ruler]["sign"]
+    if RULERS.get(querent_sign) == quesited_ruler and RULERS.get(quesited_sign) == querent_ruler:
+        score += 5
+        score_details.append("وجود استقبال متبادل في البيوت/البيوت الحاكمة (Mutual Reception): +5 نقاط")
+
+    # حساب الزمن طبقاً لجدول المرجع الكلاسيكي
+    def calculate_timing(house_num, sign_name, orb_deg):
+        if house_num in [1, 4, 7, 10]:
+            h_type = "زاوية"
+        elif house_num in [2, 5, 8, 11]:
+            h_type = "تابعة"
+        else:
+            h_type = "هابطة"
+            
+        mod = SIGN_MODALITY.get(sign_name, "كاردينالي")
+        
+        table = {
+            "زاوية": {"كاردينالي": "أيام", "متحرك": "أسابيع", "ثابت": "أشهر"},
+            "تابعة": {"كاردينالي": "أسابيع", "متحرك": "أشهر", "ثابت": "سنين"},
+            "هابطة": {"كاردينالي": "أشهر", "متحرك": "سنين", "ثابت": "وقت غير محدد"}
+        }
+        
+        unit = table.get(h_type, {}).get(mod, "أيام")
+        if unit == "وقت غير محدد":
+            return "وقت غير محدد"
+        return f"حوالي {orb_deg:.1f} {unit}"
+
+    estimated_time = "غير محدد"
+    if has_moon_aspect:
+        estimated_time = calculate_timing(planet_data["القمر"]["house"], planet_data["القمر"]["sign"], moon_orb)
+    elif has_querent_aspect:
+        estimated_time = calculate_timing(planet_data[querent_ruler]["house"], planet_data[querent_ruler]["sign"], querent_orb)
+
+    # مصفوفة القرار النهائي بناءً على النقاط الكلية
+    if score >= 5:
+        final_verdict = "نعم (Yes - قبول تام للمسألة)"
+        verdict_color = "green"
+    elif score <= -3:
+        final_verdict = "لا (No - تعذر إتمام المسألة)"
+        verdict_color = "red"
+    else:
+        final_verdict = "غير واضح / معلق (Unclear - تتطلب مراجعة أو وجود عراقيل)"
+        verdict_color = "orange"
+
+    st.markdown(f"### 🎯 المجموع الكلي للنقاط: **{score} نقطة**")
+    st.markdown(f"### النتيجة الحاسمة: <span style='color:{verdict_color}; font-size:24px;'>**{final_verdict}**</span>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 📋 تفصيل حساب النقاط والمؤشرات الفلكية:")
+    for detail in score_details:
+        st.write(f"- {detail}")
+    
+    st.write(f"- **الوقت المتوقع لتحقق المسألة:** {estimated_time}")
 
     # ==========================================
     # زر طباعة / حفظ تقرير HTML
@@ -311,21 +404,21 @@ if st.button("🚀 تحليل الخريطة الساعية واستخراج ا�
     <html lang="ar" dir="rtl">
     <head>
         <meta charset="UTF-8">
-        <title>تقرير التنجيم الساعي</title>
+        <title>تقرير التنجيم الساعي المتقدم</title>
         <style>
             body {{ font-family: Tahoma, Arial, sans-serif; direction: rtl; text-align: right; padding: 20px; color: #333; }}
             h1, h2, h3 {{ color: #1e3d59; }}
             .box {{ background: #f5f7f8; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #d1d5db; }}
-            .verdict {{ font-size: 20px; font-weight: bold; color: #2e7d32; }}
+            .verdict {{ font-size: 22px; font-weight: bold; color: {verdict_color}; }}
         </style>
     </head>
     <body>
-        <h1>🔮 تقرير نظام التنجيم الساعي الغربي</h1>
+        <h1>🔮 تقرير نظام التنجيم الساعي الغربي المتقدم</h1>
         <p><strong>تاريخ ووقت السؤال:</strong> {q_date} {q_time} ({tz_str})</p>
         <p><strong>نوع السؤال:</strong> {q_text}</p>
         
         <div class="box">
-            <h2>مؤشرات الخريطة الأساسية</h2>
+            <h2>مؤشرات الخريطة الأساسية والكويكبات</h2>
             <p><strong>الطالع:</strong> {asc_sign} (الدرجة {asc_deg:.2f}°)</p>
             <p><strong>حاكم الطالع:</strong> {querent_ruler}</p>
             <p><strong>حاكم البيت المستهدف ({target_house}):</strong> {quesited_ruler}</p>
@@ -333,19 +426,22 @@ if st.button("🚀 تحليل الخريطة الساعية واستخراج ا�
         </div>
 
         <div class="box">
-            <h2>القرار النهائي والتحليل</h2>
-            <p class="verdict">النتيجة: {final_verdict}</p>
-            <h3>التفصيل الفلكي:</h3>
-            <p>{detailed_explanation.replace('<br>', '<br>')}</p>
+            <h2>القرار النهائي والنقاط</h2>
+            <p class="verdict">النتيجة: {final_verdict} (المجموع: {score} نقطة)</p>
+            <p><strong>الوقت المتوقع للتحقق:</strong> {estimated_time}</p>
+            <h3>تفاصيل محرك النقاط:</h3>
+            <ul>
+                {"".join([f"<li>{d}</li>" for d in score_details])}
+            </ul>
         </div>
         
         <footer style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">
-            تم استخراج هذا التقرير تلقائياً عبر النظام المتقدم للتنجيم الساعي - استرو رادار.
+            جميع الحقوق محفوظة للفلكي استرو رادار.
         </footer>
     </body>
     </html>
     """
 
     b64 = base64.b64encode(html_report.encode("utf-8")).decode("utf-8")
-    href = f'<a href="data:text/html;base64,{b64}" download="Horary_Report.html" style="display:inline-block; padding:10px 20px; background-color:#4CAF50; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">📥 تحميل التقرير بصيغة HTML للطباعة</a>'
+    href = f'<a href="data:text/html;base64,{b64}" download="Advanced_Horary_Report.html" style="display:inline-block; padding:10px 20px; background-color:#4CAF50; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">📥 تحميل التقرير الشامل بصيغة HTML للطباعة</a>'
     st.markdown(href, unsafe_allow_html=True)
